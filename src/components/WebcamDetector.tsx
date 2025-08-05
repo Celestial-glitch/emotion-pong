@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -87,25 +86,26 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
         if (ctx) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           
-          // Custom pixelated drawing style
+          // Clean modern drawing style
           ctx.imageSmoothingEnabled = false;
-          ctx.strokeStyle = '#00ff88';
-          ctx.lineWidth = 3;
-          ctx.shadowColor = '#00ff88';
-          ctx.shadowBlur = 10;
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+          ctx.lineWidth = 2;
+          ctx.shadowColor = 'rgba(0, 255, 136, 0.3)';
+          ctx.shadowBlur = 5;
         }
 
-        // Custom drawing for pixelated effect
+        // Modern clean drawing for face detection
         resized.forEach(detection => {
           const { x, y, width, height } = detection.detection.box;
           
-          // Draw pixelated face detection box
+          // Draw clean face detection box
           if (ctx) {
             ctx.strokeRect(x, y, width, height);
             
-            // Draw corner brackets for cyberpunk effect
-            const cornerSize = 20;
-            ctx.lineWidth = 4;
+            // Draw minimal corner brackets
+            const cornerSize = 15;
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#00ff88';
             
             // Top-left corner
             ctx.beginPath();
@@ -178,23 +178,20 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
   return (
     <div className="webcam-detector-container">
       <style jsx>{`
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
         .webcam-detector-container {
           display: flex;
           flex-direction: column;
           align-items: center;
-          background: #000000;
-          padding: 10px;
-          font-family: 'Courier New', monospace;
+          background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+          min-height: 100vh;
+          padding: 20px;
+          font-family: 'Orbitron', monospace;
           color: #ffffff;
           position: relative;
-          border-radius: 15px;
-          border: 2px solid #00ff88;
-          box-shadow: 
-            0 0 20px rgba(0, 255, 136, 0.4),
-            inset 0 0 20px rgba(0, 255, 136, 0.1);
-              height: 100%;; /* Change from 100% to 100vh */
-  width: 100%; /* Keep this */
-  box-sizing: border-box; /* Add this */
+          overflow: hidden;
+          box-sizing: border-box;
         }
 
         .webcam-detector-container::before {
@@ -205,40 +202,68 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
           right: 0;
           bottom: 0;
           background-image: 
-            linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px);
-          background-size: 15px 15px;
+            linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+          background-size: 30px 30px;
           pointer-events: none;
-          border-radius: 13px;
+          animation: subtleMove 30s linear infinite;
+        }
+
+        @keyframes subtleMove {
+          0% { transform: translate(0, 0); }
+          100% { transform: translate(30px, 30px); }
         }
 
         .detector-title {
-          font-size: 1.8rem;
-          font-weight: bold;
+          font-family: 'Courier New', monospace;
+          font-size: 2.5rem;
+          font-weight: 900;
           text-align: center;
-          margin-bottom: 15px;
-          color: #00ff88;
-          text-shadow: 
-            0 0 5px #00ff88,
-            0 0 10px #00ff88,
-            0 0 15px #00ff88;
-          letter-spacing: 3px;
-          text-transform: uppercase;
+          margin-bottom: 25px;
+          color: #ffffff;
+          letter-spacing: 4px;
           position: relative;
           z-index: 1;
+          text-shadow: 
+            2px 2px 0px #00ff88,
+            4px 4px 0px #007755,
+            0 0 10px rgba(0, 255, 136, 0.5);
+          image-rendering: pixelated;
+          image-rendering: -moz-crisp-edges;
+          image-rendering: crisp-edges;
+          text-transform: uppercase;
+          animation: pixelGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes pixelGlow {
+          from { 
+            filter: brightness(1);
+            text-shadow: 
+              2px 2px 0px #00ff88,
+              4px 4px 0px #007755,
+              0 0 10px rgba(0, 255, 136, 0.5);
+          }
+          to { 
+            filter: brightness(1.2);
+            text-shadow: 
+              2px 2px 0px #00ff88,
+              4px 4px 0px #007755,
+              0 0 20px rgba(0, 255, 136, 0.8),
+              0 0 30px rgba(0, 255, 136, 0.3);
+          }
         }
 
         .video-container {
           position: relative;
           width: 640px;
           height: 480px;
-          margin: 0 auto 20px;
-          border: 3px solid #00ff88;
-          border-radius: 10px;
+          margin: 0 auto 25px;
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          border-radius: 12px;
           overflow: hidden;
           box-shadow: 
-            0 0 30px rgba(0, 255, 136, 0.4),
-            inset 0 0 10px rgba(0, 255, 136, 0.1);
+            0 0 30px rgba(0, 0, 0, 0.8),
+            inset 0 0 1px rgba(255, 255, 255, 0.1);
           background: #000000;
           z-index: 1;
           position: relative;
@@ -251,7 +276,7 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
           width: 100%;
           height: 100%;
           object-fit: cover;
-          filter: contrast(1.2) brightness(0.9);
+          filter: contrast(1.1) brightness(0.95);
         }
 
         .canvas-overlay {
@@ -266,18 +291,20 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
 
         .status-overlay {
           position: absolute;
-          top: 10px;
-          left: 10px;
-          background: rgba(0, 0, 0, 0.8);
-          padding: 8px 12px;
-          border-radius: 5px;
-          border: 1px solid #00ff88;
-          font-size: 0.9rem;
-          color: #00ff88;
+          top: 15px;
+          left: 15px;
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          padding: 8px 16px;
+          border-radius: 6px;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          font-size: 0.85rem;
+          color: #ffffff;
           z-index: 15;
-          font-weight: bold;
+          font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 1px;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
         }
 
         .pause-overlay {
@@ -285,46 +312,47 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          background: rgba(0, 0, 0, 0.9);
-          padding: 20px;
-          border-radius: 10px;
-          border: 2px solid #ff6b00;
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(15px);
+          padding: 25px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 107, 0, 0.5);
           color: #ff6b00;
-          font-size: 1.5rem;
-          font-weight: bold;
+          font-size: 1.3rem;
+          font-weight: 700;
           z-index: 20;
-          text-shadow: 0 0 10px #ff6b00;
+          text-shadow: 0 0 10px rgba(255, 107, 0, 0.5);
           text-transform: uppercase;
           letter-spacing: 2px;
+          box-shadow: 0 8px 32px rgba(255, 107, 0, 0.3);
         }
 
         .emotion-display {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(0, 0, 0, 0.8);
-          padding: 20px;
-          border-radius: 15px;
-          border: 2px solid #00ff88;
-          margin-bottom: 20px;
-          box-shadow: 
-            0 0 20px rgba(0, 255, 136, 0.3),
-            inset 0 0 10px rgba(0, 255, 136, 0.1);
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(10px);
+          padding: 25px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          margin-bottom: 25px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
           position: relative;
           z-index: 1;
-          min-width: 300px;
+          min-width: 350px;
         }
 
         .emotion-icon {
-          font-size: 3rem;
-          margin-right: 20px;
-          filter: drop-shadow(0 0 10px currentColor);
-          animation: emotionPulse 2s ease-in-out infinite;
+          font-size: 3.5rem;
+          margin-right: 25px;
+          filter: drop-shadow(0 0 8px currentColor);
+          animation: emotionFloat 2s ease-in-out infinite;
         }
 
-        @keyframes emotionPulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.1); }
+        @keyframes emotionFloat {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-3px); }
         }
 
         .emotion-info {
@@ -332,37 +360,39 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
         }
 
         .emotion-text {
-          font-size: 1.8rem;
-          font-weight: bold;
+          font-size: 1.6rem;
+          font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 2px;
-          text-shadow: 0 0 10px currentColor;
-          margin-bottom: 5px;
+          text-shadow: 0 0 8px currentColor;
+          margin-bottom: 8px;
         }
 
         .confidence-text {
-          font-size: 1rem;
-          color: #888;
+          font-size: 0.9rem;
+          color: #cccccc;
           text-transform: uppercase;
           letter-spacing: 1px;
+          font-weight: 500;
+          margin-bottom: 8px;
         }
 
         .confidence-bar {
-          width: 200px;
-          height: 8px;
-          background: #333;
-          border-radius: 4px;
-          margin-top: 5px;
+          width: 220px;
+          height: 6px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 3px;
           overflow: hidden;
-          border: 1px solid #555;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .confidence-fill {
           height: 100%;
           background: linear-gradient(90deg, #00ff88, #00cc6a);
-          border-radius: 3px;
+          border-radius: 2px;
           transition: width 0.3s ease;
-          box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+          box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
         }
 
         .controls-panel {
@@ -370,105 +400,70 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
           gap: 15px;
           position: relative;
           z-index: 1;
+          margin-bottom: 20px;
         }
 
         .control-button {
           padding: 12px 24px;
-          font-size: 1.1rem;
-          font-weight: bold;
-          background: linear-gradient(45deg, #00ff88, #00cc6a);
-          color: #000;
-          border: 2px solid #00ff88;
+          font-size: 1rem;
+          font-weight: 600;
+          font-family: 'Orbitron', monospace;
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          color: #ffffff;
+          border: 1px solid rgba(255, 255, 255, 0.2);
           border-radius: 8px;
           cursor: pointer;
           transition: all 0.3s ease;
           text-transform: uppercase;
           letter-spacing: 1px;
-          box-shadow: 
-            0 0 15px rgba(0, 255, 136, 0.4),
-            inset 0 0 10px rgba(255, 255, 255, 0.1);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
         }
 
         .control-button:hover {
-          background: linear-gradient(45deg, #00cc6a, #009950);
+          background: rgba(0, 255, 136, 0.2);
+          border-color: rgba(0, 255, 136, 0.4);
           transform: translateY(-2px);
-          box-shadow: 
-            0 5px 20px rgba(0, 255, 136, 0.6),
-            inset 0 0 15px rgba(255, 255, 255, 0.2);
-        }
-
-        .pause-button {
-          background: linear-gradient(45deg, #ff6b00, #e55a00);
-          border-color: #ff6b00;
-          box-shadow: 
-            0 0 15px rgba(255, 107, 0, 0.4),
-            inset 0 0 10px rgba(255, 255, 255, 0.1);
+          box-shadow: 0 6px 20px rgba(0, 255, 136, 0.3);
         }
 
         .pause-button:hover {
-          background: linear-gradient(45deg, #e55a00, #cc4d00);
-          box-shadow: 
-            0 5px 20px rgba(255, 107, 0, 0.6),
-            inset 0 0 15px rgba(255, 255, 255, 0.2);
-        }
-
-        .restart-button {
-          background: linear-gradient(45deg, #ff0066, #cc0052);
-          border-color: #ff0066;
-          box-shadow: 
-            0 0 15px rgba(255, 0, 102, 0.4),
-            inset 0 0 10px rgba(255, 255, 255, 0.1);
+          background: rgba(255, 107, 0, 0.2);
+          border-color: rgba(255, 107, 0, 0.4);
+          box-shadow: 0 6px 20px rgba(255, 107, 0, 0.3);
         }
 
         .restart-button:hover {
-          background: linear-gradient(45deg, #cc0052, #99003d);
-          box-shadow: 
-            0 5px 20px rgba(255, 0, 102, 0.6),
-            inset 0 0 15px rgba(255, 255, 255, 0.2);
+          background: rgba(255, 100, 100, 0.2);
+          border-color: rgba(255, 100, 100, 0.4);
+          box-shadow: 0 6px 20px rgba(255, 100, 100, 0.3);
         }
 
         .no-face-warning {
           background: rgba(255, 107, 0, 0.1);
-          border: 1px solid #ff6b00;
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 107, 0, 0.3);
           color: #ff6b00;
-          padding: 10px;
-          border-radius: 5px;
+          padding: 15px 20px;
+          border-radius: 8px;
           font-size: 0.9rem;
           text-align: center;
-          margin-top: 10px;
           position: relative;
           z-index: 1;
+          font-weight: 500;
+          box-shadow: 0 4px 16px rgba(255, 107, 0, 0.2);
+          max-width: 500px;
+        }
+
+        .no-face-warning::before {
+          content: '⚠️';
+          margin-right: 8px;
+          font-size: 1.1em;
         }
       `}</style>
 
       <div className="detector-title">Neural Interface Scanner</div>
       
-      <div className="video-container">
-        <video 
-          ref={videoRef} 
-          autoPlay 
-          muted 
-          width={640} 
-          height={480} 
-          className="video-element"
-        />
-        <canvas 
-          ref={canvasRef} 
-          width={640} 
-          height={480} 
-          className="canvas-overlay"
-        />
-        
-        <div className="status-overlay">
-          {faceDetected ? "FACE LOCKED" : "SCANNING..."}
-        </div>
-        
-        {isPaused && (
-          <div className="pause-overlay">
-            DETECTION PAUSED
-          </div>
-        )}
-      </div>
 
       <div className="emotion-display">
         <div 
@@ -496,6 +491,37 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
         </div>
       </div>
 
+
+      <div className="video-container">
+        <video 
+          ref={videoRef} 
+          autoPlay 
+          muted 
+          width={640} 
+          height={480} 
+          className="video-element"
+        />
+        <canvas 
+          ref={canvasRef} 
+          width={640} 
+          height={480} 
+          className="canvas-overlay"
+        />
+        
+        <div className="status-overlay">
+          {faceDetected ? "FACE LOCKED" : "SCANNING..."}
+        </div>
+        
+        {isPaused && (
+          <div className="pause-overlay">
+            DETECTION PAUSED
+          </div>
+        )}
+      </div>
+
+      
+
+      {/* Uncomment to show controls
       <div className="controls-panel">
         <button 
           onClick={handleTogglePause}
@@ -510,10 +536,11 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
           Restart
         </button>
       </div>
+      */}
 
       {!faceDetected && !isPaused && (
         <div className="no-face-warning">
-          ⚠️ No face detected - Position yourself in front of the camera
+          No face detected - Position yourself in front of the camera
         </div>
       )}
     </div>

@@ -110,3 +110,4 @@ const EmotionGame = ({ detectedEmotion }: { detectedEmotion: string }) => {
 };
 
 export default EmotionGame;
+
