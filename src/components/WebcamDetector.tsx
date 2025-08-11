@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import * as faceapi from "face-api.js";
 
 interface WebcamDetectorProps {
@@ -11,12 +11,14 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const modelsLoaded = useRef(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const lastProcessTime = useRef<number>(0);
   
   const [isPaused, setIsPaused] = useState(false);
   const [currentEmotion, setCurrentEmotion] = useState("neutral");
   const [confidence, setConfidence] = useState(0);
   const [faceDetected, setFaceDetected] = useState(false);
+  const [fps, setFps] = useState(0);
 
   const getEmotionIcon = (emotion: string) => {
     switch (emotion) {
@@ -44,34 +46,34 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
     }
   };
 
-  useEffect(() => {
-    const loadModels = async () => {
-      if (modelsLoaded.current) return;
-      await faceapi.nets.tinyFaceDetector.loadFromUri("/models/tiny_face_detector_model");
-      await faceapi.nets.faceExpressionNet.loadFromUri("/models/face_expression_model");
-      await faceapi.nets.faceLandmark68Net.loadFromUri("/models/face_landmark_68_model");
-      modelsLoaded.current = true;
-    };
+  // Optimized detection function with requestAnimationFrame
+  const processFrame = useCallback(async () => {
+    if (isPaused) {
+      animationFrameRef.current = requestAnimationFrame(processFrame);
+      return;
+    }
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    if (!video || !canvas || video.videoWidth === 0 || video.videoHeight === 0) {
+      animationFrameRef.current = requestAnimationFrame(processFrame);
+      return;
+    }
 
-    const startVideo = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    };
-
-    loadModels().then(startVideo);
-
-    const startDetection = () => {
-      intervalRef.current = setInterval(async () => {
-        if (isPaused) return;
-        
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        if (!video || !canvas || video.videoWidth === 0 || video.videoHeight === 0) return;
+    const now = performance.now();
+    
+    // Process every 100ms for faster detection while maintaining performance
+    if (now - lastProcessTime.current > 100) {
+      try {
+        // Use smaller input size for faster processing
+        const detectionOptions = new faceapi.TinyFaceDetectorOptions({
+          inputSize: 256, // Reduced from default 416 for speed
+          scoreThreshold: 0.3 // Lower threshold for faster detection
+        });
 
         const detections = await faceapi
-          .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+          .detectAllFaces(video, detectionOptions)
           .withFaceLandmarks()
           .withFaceExpressions();
 
@@ -86,50 +88,37 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
         if (ctx) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           
-          // Clean modern drawing style
+          // Optimized drawing with reduced effects for performance
           ctx.imageSmoothingEnabled = false;
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
           ctx.lineWidth = 2;
-          ctx.shadowColor = 'rgba(0, 255, 136, 0.3)';
-          ctx.shadowBlur = 5;
         }
 
-        // Modern clean drawing for face detection
+        // Streamlined drawing for better performance
         resized.forEach(detection => {
           const { x, y, width, height } = detection.detection.box;
           
-          // Draw clean face detection box
           if (ctx) {
-            ctx.strokeRect(x, y, width, height);
-            
-            // Draw minimal corner brackets
+            // Simple corner brackets for speed
             const cornerSize = 15;
             ctx.lineWidth = 3;
             ctx.strokeStyle = '#00ff88';
             
-            // Top-left corner
+            // Draw all corners in one path for efficiency
             ctx.beginPath();
+            // Top-left
             ctx.moveTo(x, y + cornerSize);
             ctx.lineTo(x, y);
             ctx.lineTo(x + cornerSize, y);
-            ctx.stroke();
-            
-            // Top-right corner
-            ctx.beginPath();
+            // Top-right
             ctx.moveTo(x + width - cornerSize, y);
             ctx.lineTo(x + width, y);
             ctx.lineTo(x + width, y + cornerSize);
-            ctx.stroke();
-            
-            // Bottom-left corner
-            ctx.beginPath();
+            // Bottom-left
             ctx.moveTo(x, y + height - cornerSize);
             ctx.lineTo(x, y + height);
             ctx.lineTo(x + cornerSize, y + height);
-            ctx.stroke();
-            
-            // Bottom-right corner
-            ctx.beginPath();
+            // Bottom-right
             ctx.moveTo(x + width - cornerSize, y + height);
             ctx.lineTo(x + width, y + height);
             ctx.lineTo(x + width, y + height - cornerSize);
@@ -152,17 +141,73 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
           setCurrentEmotion("neutral");
           setConfidence(0);
         }
-      }, 500);
+
+        // Calculate FPS
+        const processingTime = performance.now() - now;
+        const currentFps = Math.round(1000 / Math.max(processingTime, 100));
+        setFps(currentFps);
+        
+        lastProcessTime.current = now;
+      } catch (error) {
+        console.error('Detection error:', error);
+      }
+    }
+
+    animationFrameRef.current = requestAnimationFrame(processFrame);
+  }, [onEmotionDetected, isPaused]);
+
+  useEffect(() => {
+    const loadModels = async () => {
+      if (modelsLoaded.current) return;
+      
+      console.log('Loading models...');
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri("/models/tiny_face_detector_model"),
+        faceapi.nets.faceExpressionNet.loadFromUri("/models/face_expression_model"),
+        faceapi.nets.faceLandmark68Net.loadFromUri("/models/face_landmark_68_model")
+      ]);
+      
+      modelsLoaded.current = true;
+      console.log('Models loaded successfully');
     };
 
-    startDetection();
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+    const startVideo = async () => {
+      try {
+        // Request higher quality video for better detection
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            frameRate: { ideal: 30, max: 60 } // Higher frame rate
+          } 
+        });
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.onloadedmetadata = () => {
+            // Start processing once video is ready
+            animationFrameRef.current = requestAnimationFrame(processFrame);
+          };
+        }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
       }
     };
-  }, [onEmotionDetected, isPaused]);
+
+    loadModels().then(startVideo);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      
+      // Clean up video stream
+      if (videoRef.current?.srcObject) {
+        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+        tracks.forEach(track => track.stop());
+      }
+    };
+  }, [processFrame]);
 
   const handleTogglePause = () => {
     setIsPaused(!isPaused);
@@ -173,6 +218,7 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
     setConfidence(0);
     setFaceDetected(false);
     setIsPaused(false);
+    setFps(0);
   };
 
   return (
@@ -305,6 +351,24 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
           text-transform: uppercase;
           letter-spacing: 1px;
           box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .performance-overlay {
+          position: absolute;
+          top: 15px;
+          right: 15px;
+          background: rgba(0, 255, 136, 0.1);
+          backdrop-filter: blur(10px);
+          padding: 6px 12px;
+          border-radius: 6px;
+          border: 1px solid rgba(0, 255, 136, 0.3);
+          font-size: 0.75rem;
+          color: #00ff88;
+          z-index: 15;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          box-shadow: 0 4px 16px rgba(0, 255, 136, 0.2);
         }
 
         .pause-overlay {
@@ -512,6 +576,10 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
           {faceDetected ? "FACE LOCKED" : "SCANNING..."}
         </div>
         
+        <div className="performance-overlay">
+          {fps} FPS
+        </div>
+        
         {isPaused && (
           <div className="pause-overlay">
             DETECTION PAUSED
@@ -521,7 +589,6 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
 
       
 
-      {/* Uncomment to show controls
       <div className="controls-panel">
         <button 
           onClick={handleTogglePause}
@@ -536,7 +603,6 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
           Restart
         </button>
       </div>
-      */}
 
       {!faceDetected && !isPaused && (
         <div className="no-face-warning">
