@@ -2,8 +2,8 @@ import "../styles/globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Emotion Type Racer",
-  description: "Typing speed meets facial emotion detection.",
+  title: "Emotion Pong Game",
+  description: "Make expressions to play the game.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
