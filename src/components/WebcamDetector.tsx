@@ -19,6 +19,28 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
   const [confidence, setConfidence] = useState(0);
   const [faceDetected, setFaceDetected] = useState(false);
   const [fps, setFps] = useState(0);
+  const [videoSize, setVideoSize] = useState({
+    width: 600,
+    height: 450
+  });
+
+  // Calculate responsive video size - same as game canvas
+  useEffect(() => {
+    const updateVideoSize = () => {
+      const isMobile = window.innerWidth < 768;
+      const availableWidth = Math.min(window.innerWidth - 40, isMobile ? 350 : 600);
+      const aspectRatio = 4 / 3; // Same as game (600/450)
+      
+      const width = availableWidth;
+      const height = width / aspectRatio;
+      
+      setVideoSize({ width, height });
+    };
+
+    updateVideoSize();
+    window.addEventListener('resize', updateVideoSize);
+    return () => window.removeEventListener('resize', updateVideoSize);
+  }, []);
 
   const getEmotionIcon = (emotion: string) => {
     switch (emotion) {
@@ -222,390 +244,186 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
   };
 
   return (
-    <div className="webcam-detector-container">
+    <div className="d-flex flex-column align-items-center w-100" style={{
+      background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)',
+      fontFamily: '"Orbitron", monospace',
+      color: '#ffffff',
+      minHeight: '100vh',
+      padding: '10px'
+    }}>
       <style jsx>{`
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
-
-        .webcam-detector-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
-          min-height: 100vh;
-          padding: 20px;
-          font-family: 'Orbitron', monospace;
-          color: #ffffff;
-          position: relative;
-          overflow: hidden;
-          box-sizing: border-box;
-        }
-
-        .webcam-detector-container::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-image: 
-            linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-          background-size: 30px 30px;
-          pointer-events: none;
-          animation: subtleMove 30s linear infinite;
-        }
-
-        @keyframes subtleMove {
-          0% { transform: translate(0, 0); }
-          100% { transform: translate(30px, 30px); }
-        }
-
-        .detector-title {
-          font-family: 'Courier New', monospace;
-          font-size: 2.5rem;
-          font-weight: 900;
-          text-align: center;
-          margin-bottom: 25px;
-          color: #ffffff;
-          letter-spacing: 4px;
-          position: relative;
-          z-index: 1;
-          text-shadow: 
-            2px 2px 0px #00ff88,
-            4px 4px 0px #007755,
-            0 0 10px rgba(0, 255, 136, 0.5);
-          image-rendering: pixelated;
-          image-rendering: -moz-crisp-edges;
-          image-rendering: crisp-edges;
-          text-transform: uppercase;
-          animation: pixelGlow 3s ease-in-out infinite alternate;
-        }
-
-        @keyframes pixelGlow {
-          from { 
-            filter: brightness(1);
-            text-shadow: 
-              2px 2px 0px #00ff88,
-              4px 4px 0px #007755,
-              0 0 10px rgba(0, 255, 136, 0.5);
-          }
-          to { 
-            filter: brightness(1.2);
-            text-shadow: 
-              2px 2px 0px #00ff88,
-              4px 4px 0px #007755,
-              0 0 20px rgba(0, 255, 136, 0.8),
-              0 0 30px rgba(0, 255, 136, 0.3);
-          }
-        }
-
-        .video-container {
-          position: relative;
-          width: 640px;
-          height: 480px;
-          margin: 0 auto 25px;
-          border: 2px solid rgba(255, 255, 255, 0.2);
-          border-radius: 12px;
-          overflow: hidden;
-          box-shadow: 
-            0 0 30px rgba(0, 0, 0, 0.8),
-            inset 0 0 1px rgba(255, 255, 255, 0.1);
-          background: #000000;
-          z-index: 1;
-          position: relative;
-        }
-
-        .video-element {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          filter: contrast(1.1) brightness(0.95);
-        }
-
-        .canvas-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          z-index: 10;
-          pointer-events: none;
-        }
-
-        .status-overlay {
-          position: absolute;
-          top: 15px;
-          left: 15px;
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(10px);
-          padding: 8px 16px;
-          border-radius: 6px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          font-size: 0.85rem;
-          color: #ffffff;
-          z-index: 15;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-        }
-
-        .performance-overlay {
-          position: absolute;
-          top: 15px;
-          right: 15px;
-          background: rgba(0, 255, 136, 0.1);
-          backdrop-filter: blur(10px);
-          padding: 6px 12px;
-          border-radius: 6px;
-          border: 1px solid rgba(0, 255, 136, 0.3);
-          font-size: 0.75rem;
-          color: #00ff88;
-          z-index: 15;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          box-shadow: 0 4px 16px rgba(0, 255, 136, 0.2);
-        }
-
-        .pause-overlay {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(15px);
-          padding: 25px;
-          border-radius: 12px;
-          border: 1px solid rgba(255, 107, 0, 0.5);
-          color: #ff6b00;
-          font-size: 1.3rem;
-          font-weight: 700;
-          z-index: 20;
-          text-shadow: 0 0 10px rgba(255, 107, 0, 0.5);
-          text-transform: uppercase;
-          letter-spacing: 2px;
-          box-shadow: 0 8px 32px rgba(255, 107, 0, 0.3);
-        }
-
-        .emotion-display {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(255, 255, 255, 0.05);
-          backdrop-filter: blur(10px);
-          padding: 25px;
-          border-radius: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          margin-bottom: 25px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-          position: relative;
-          z-index: 1;
-          min-width: 350px;
-        }
-
-        .emotion-icon {
-          font-size: 3.5rem;
-          margin-right: 25px;
-          filter: drop-shadow(0 0 8px currentColor);
-          animation: emotionFloat 2s ease-in-out infinite;
-        }
-
-        @keyframes emotionFloat {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-3px); }
-        }
-
-        .emotion-info {
-          text-align: left;
-        }
-
-        .emotion-text {
-          font-size: 1.6rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 2px;
-          text-shadow: 0 0 8px currentColor;
-          margin-bottom: 8px;
-        }
-
-        .confidence-text {
-          font-size: 0.9rem;
-          color: #cccccc;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          font-weight: 500;
-          margin-bottom: 8px;
-        }
-
-        .confidence-bar {
-          width: 220px;
-          height: 6px;
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 3px;
-          overflow: hidden;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .confidence-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #00ff88, #00cc6a);
-          border-radius: 2px;
-          transition: width 0.3s ease;
-          box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
-        }
-
-        .controls-panel {
-          display: flex;
-          gap: 15px;
-          position: relative;
-          z-index: 1;
-          margin-bottom: 20px;
-        }
-
-        .control-button {
-          padding: 12px 24px;
-          font-size: 1rem;
-          font-weight: 600;
-          font-family: 'Orbitron', monospace;
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(10px);
-          color: #ffffff;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        .control-button:hover {
-          background: rgba(0, 255, 136, 0.2);
-          border-color: rgba(0, 255, 136, 0.4);
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(0, 255, 136, 0.3);
-        }
-
-        .pause-button:hover {
-          background: rgba(255, 107, 0, 0.2);
-          border-color: rgba(255, 107, 0, 0.4);
-          box-shadow: 0 6px 20px rgba(255, 107, 0, 0.3);
-        }
-
-        .restart-button:hover {
-          background: rgba(255, 100, 100, 0.2);
-          border-color: rgba(255, 100, 100, 0.4);
-          box-shadow: 0 6px 20px rgba(255, 100, 100, 0.3);
-        }
-
-        .no-face-warning {
-          background: rgba(255, 107, 0, 0.1);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 107, 0, 0.3);
-          color: #ff6b00;
-          padding: 15px 20px;
-          border-radius: 8px;
-          font-size: 0.9rem;
-          text-align: center;
-          position: relative;
-          z-index: 1;
-          font-weight: 500;
-          box-shadow: 0 4px 16px rgba(255, 107, 0, 0.2);
-          max-width: 500px;
-        }
-
-        .no-face-warning::before {
-          content: '⚠️';
-          margin-right: 8px;
-          font-size: 1.1em;
-        }
       `}</style>
 
-      <div className="detector-title">Neural Interface Scanner</div>
-      
+      <div className="text-center mb-3">
+        <div style={{
+          fontFamily: '"Courier New", monospace',
+          fontSize: 'clamp(1.2rem, 4vw, 2rem)',
+          fontWeight: 900,
+          letterSpacing: '3px',
+          color: '#ffffff',
+          textShadow: '2px 2px 0px #00ff88, 0 0 10px rgba(0, 255, 136, 0.5)',
+          textTransform: 'uppercase'
+        }}>
+          Neural Interface Scanner
+        </div>
+      </div>
 
-      <div className="emotion-display">
+      {/* Emotion Display */}
+      <div className="d-flex align-items-center justify-content-center mb-3 p-3 bg-dark bg-opacity-50 rounded" style={{
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        maxWidth: `${videoSize.width}px`,
+        width: '100%'
+      }}>
         <div 
-          className="emotion-icon"
-          style={{ color: getEmotionColor(currentEmotion) }}
+          className="me-3"
+          style={{ 
+            fontSize: 'clamp(2rem, 6vw, 3rem)',
+            color: getEmotionColor(currentEmotion),
+            filter: 'drop-shadow(0 0 8px currentColor)'
+          }}
         >
           {getEmotionIcon(currentEmotion)}
         </div>
-        <div className="emotion-info">
+        <div className="text-start flex-grow-1">
           <div 
-            className="emotion-text"
-            style={{ color: getEmotionColor(currentEmotion) }}
+            className="h4 mb-1"
+            style={{ 
+              color: getEmotionColor(currentEmotion),
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              textShadow: '0 0 8px currentColor'
+            }}
           >
             {currentEmotion}
           </div>
-          <div className="confidence-text">
+          <div className="small text-muted mb-2">
             Confidence: {Math.round(confidence * 100)}%
           </div>
-          <div className="confidence-bar">
+          <div className="progress" style={{ height: '6px' }}>
             <div 
-              className="confidence-fill"
-              style={{ width: `${confidence * 100}%` }}
+              className="progress-bar" 
+              style={{ 
+                width: `${confidence * 100}%`,
+                background: 'linear-gradient(90deg, #00ff88, #00cc6a)',
+                boxShadow: '0 0 8px rgba(0, 255, 136, 0.4)'
+              }}
             />
           </div>
         </div>
       </div>
 
-
-      <div className="video-container">
+      {/* Video Container */}
+      <div 
+        className="position-relative mb-3 border rounded overflow-hidden"
+        style={{
+          width: `${videoSize.width}px`,
+          height: `${videoSize.height}px`,
+          maxWidth: '100%',
+          border: '2px solid rgba(255, 255, 255, 0.2) !important',
+          boxShadow: '0 0 30px rgba(0, 0, 0, 0.8)',
+          background: '#000000'
+        }}
+      >
         <video 
           ref={videoRef} 
           autoPlay 
           muted 
-          width={640} 
-          height={480} 
-          className="video-element"
+          className="position-absolute top-0 start-0 w-100 h-100"
+          style={{ 
+            objectFit: 'cover',
+            filter: 'contrast(1.1) brightness(0.95)'
+          }}
         />
         <canvas 
           ref={canvasRef} 
-          width={640} 
-          height={480} 
-          className="canvas-overlay"
+          className="position-absolute top-0 start-0 w-100 h-100"
+          style={{ pointerEvents: 'none', zIndex: 10 }}
         />
         
-        <div className="status-overlay">
+        {/* Status Overlay */}
+        <div 
+          className="position-absolute top-0 start-0 m-2 px-2 py-1 bg-dark bg-opacity-75 rounded small text-light"
+          style={{
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            fontSize: '0.7rem',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '1px'
+          }}
+        >
           {faceDetected ? "FACE LOCKED" : "SCANNING..."}
         </div>
         
-        <div className="performance-overlay">
+        {/* Performance Overlay */}
+        <div 
+          className="position-absolute top-0 end-0 m-2 px-2 py-1 rounded small"
+          style={{
+            background: 'rgba(0, 255, 136, 0.1)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(0, 255, 136, 0.3)',
+            color: '#00ff88',
+            fontSize: '0.7rem',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '1px'
+          }}
+        >
           {fps} FPS
         </div>
         
+        {/* Pause Overlay */}
         {isPaused && (
-          <div className="pause-overlay">
+          <div 
+            className="position-absolute top-50 start-50 translate-middle p-3 bg-dark bg-opacity-75 rounded text-center"
+            style={{
+              backdropFilter: 'blur(15px)',
+              border: '1px solid rgba(255, 107, 0, 0.5)',
+              color: '#ff6b00',
+              fontWeight: 700,
+              textShadow: '0 0 10px rgba(255, 107, 0, 0.5)',
+              textTransform: 'uppercase',
+              letterSpacing: '2px'
+            }}
+          >
             DETECTION PAUSED
           </div>
         )}
       </div>
 
-      
-
-      <div className="controls-panel">
+      {/* Controls */}
+      <div className="d-flex gap-3 flex-wrap justify-content-center mb-3">
         <button 
           onClick={handleTogglePause}
-          className={`control-button ${isPaused ? 'pause-button' : ''}`}
+          className={`btn px-3 py-2 ${isPaused ? 'btn-outline-warning' : 'btn-outline-light'}`}
+          style={{ fontFamily: '"Orbitron", monospace' }}
         >
           {isPaused ? 'Resume' : 'Pause'}
         </button>
         <button 
           onClick={handleRestart}
-          className="control-button restart-button"
+          className="btn btn-outline-danger px-3 py-2"
+          style={{ fontFamily: '"Orbitron", monospace' }}
         >
           Restart
         </button>
       </div>
 
+      {/* Warning Message */}
       {!faceDetected && !isPaused && (
-        <div className="no-face-warning">
+        <div 
+          className="alert alert-warning d-flex align-items-center text-center small"
+          style={{
+            background: 'rgba(255, 107, 0, 0.1)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 107, 0, 0.3)',
+            color: '#ff6b00',
+            maxWidth: '400px'
+          }}
+        >
+          <span className="me-2">⚠️</span>
           No face detected - Position yourself in front of the camera
         </div>
       )}
