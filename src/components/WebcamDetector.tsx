@@ -412,7 +412,7 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
       </div>
 
       {/* Warning Message */}
-      {!faceDetected && !isPaused && (
+      {/* {!faceDetected && !isPaused && (
         <div 
           className="alert alert-warning d-flex align-items-center text-center small"
           style={{
@@ -426,7 +426,10 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
           <span className="me-2">⚠️</span>
           No face detected - Position yourself in front of the camera
         </div>
-      )}
+      )} */}
+
+
+      
     </div>
   );
 };
