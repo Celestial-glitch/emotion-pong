@@ -118,7 +118,7 @@ const EmotionBlaster: React.FC<EmotionBlasterProps> = ({ playerName }) => {
                   height: "auto",
                 }}
               >
-                <WebcamDetector onEmotionDetected={setDetectedEmotion} />
+                <WebcamDetector onEmotionDetected={setDetectedEmotion} playerName={playerName} />
               </div>
             </div>
           </div>

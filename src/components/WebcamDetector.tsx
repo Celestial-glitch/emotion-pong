@@ -5,10 +5,12 @@ import * as faceapi from "face-api.js";
 
 interface WebcamDetectorProps {
   onEmotionDetected: (emotion: string) => void;
+   playerName: string; // Add playerName prop
 }
 
 const WebcamDetector: React.FC<WebcamDetectorProps> = ({
   onEmotionDetected,
+   playerName, // Accept playerName prop
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -327,7 +329,7 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({
             textTransform: "uppercase",
           }}
         >
-          Neural Interface Scanner
+          {playerName}'s Webcam
         </div>
       </div>
 

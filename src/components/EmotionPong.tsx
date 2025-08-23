@@ -374,7 +374,7 @@ const EmotionPong: React.FC<EmotionPongProps> = ({
             textShadow: "0 0 20px rgba(255, 0, 102, 0.8)",
           }}
         >
-          SYSTEM FAILURE
+          GAME OVER
         </div>
 
         <div
