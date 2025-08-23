@@ -7,13 +7,15 @@ interface WebcamDetectorProps {
   onEmotionDetected: (emotion: string) => void;
 }
 
-const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) => {
+const WebcamDetector: React.FC<WebcamDetectorProps> = ({
+  onEmotionDetected,
+}) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const modelsLoaded = useRef(false);
   const animationFrameRef = useRef<number | null>(null);
   const lastProcessTime = useRef<number>(0);
-  
+
   const [isPaused, setIsPaused] = useState(false);
   const [currentEmotion, setCurrentEmotion] = useState("neutral");
   const [confidence, setConfidence] = useState(0);
@@ -21,50 +23,69 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
   const [fps, setFps] = useState(0);
   const [videoSize, setVideoSize] = useState({
     width: 600,
-    height: 450
+    height: 450,
   });
 
   // Calculate responsive video size - same as game canvas
   useEffect(() => {
     const updateVideoSize = () => {
       const isMobile = window.innerWidth < 768;
-      const availableWidth = Math.min(window.innerWidth - 40, isMobile ? 350 : 600);
+      const availableWidth = Math.min(
+        window.innerWidth - 40,
+        isMobile ? 350 : 600
+      );
       const aspectRatio = 4 / 3; // Same as game (600/450)
-      
+
       const width = availableWidth;
       const height = width / aspectRatio;
-      
+
       setVideoSize({ width, height });
     };
 
     updateVideoSize();
-    window.addEventListener('resize', updateVideoSize);
-    return () => window.removeEventListener('resize', updateVideoSize);
+    window.addEventListener("resize", updateVideoSize);
+    return () => window.removeEventListener("resize", updateVideoSize);
   }, []);
 
   const getEmotionIcon = (emotion: string) => {
     switch (emotion) {
-      case 'happy': return '😊';
-      case 'sad': return '😢';
-      case 'angry': return '😠';
-      case 'surprised': return '😲';
-      case 'fearful': return '😨';
-      case 'disgusted': return '🤢';
-      case 'neutral': return '😐';
-      default: return '🤖';
+      case "happy":
+        return "😊";
+      case "sad":
+        return "😢";
+      case "angry":
+        return "😠";
+      case "surprised":
+        return "😲";
+      case "fearful":
+        return "😨";
+      case "disgusted":
+        return "🤢";
+      case "neutral":
+        return "😐";
+      default:
+        return "🤖";
     }
   };
 
   const getEmotionColor = (emotion: string) => {
     switch (emotion) {
-      case 'happy': return '#00ff88';
-      case 'sad': return '#4a90e2';
-      case 'angry': return '#ff0066';
-      case 'surprised': return '#ff6b00';
-      case 'fearful': return '#9b59b6';
-      case 'disgusted': return '#f39c12';
-      case 'neutral': return '#888888';
-      default: return '#00ff88';
+      case "happy":
+        return "#00ff88";
+      case "sad":
+        return "#4a90e2";
+      case "angry":
+        return "#ff0066";
+      case "surprised":
+        return "#ff6b00";
+      case "fearful":
+        return "#9b59b6";
+      case "disgusted":
+        return "#f39c12";
+      case "neutral":
+        return "#888888";
+      default:
+        return "#00ff88";
     }
   };
 
@@ -74,24 +95,29 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
       animationFrameRef.current = requestAnimationFrame(processFrame);
       return;
     }
-    
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    
-    if (!video || !canvas || video.videoWidth === 0 || video.videoHeight === 0) {
+
+    if (
+      !video ||
+      !canvas ||
+      video.videoWidth === 0 ||
+      video.videoHeight === 0
+    ) {
       animationFrameRef.current = requestAnimationFrame(processFrame);
       return;
     }
 
     const now = performance.now();
-    
+
     // Process every 100ms for faster detection while maintaining performance
     if (now - lastProcessTime.current > 100) {
       try {
         // Use smaller input size for faster processing
         const detectionOptions = new faceapi.TinyFaceDetectorOptions({
           inputSize: 256, // Reduced from default 416 for speed
-          scoreThreshold: 0.3 // Lower threshold for faster detection
+          scoreThreshold: 0.3, // Lower threshold for faster detection
         });
 
         const detections = await faceapi
@@ -99,7 +125,10 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
           .withFaceLandmarks()
           .withFaceExpressions();
 
-        const displaySize = { width: video.videoWidth, height: video.videoHeight };
+        const displaySize = {
+          width: video.videoWidth,
+          height: video.videoHeight,
+        };
         canvas.width = displaySize.width;
         canvas.height = displaySize.height;
 
@@ -109,23 +138,23 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
         const ctx = canvas.getContext("2d");
         if (ctx) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          
+
           // Optimized drawing with reduced effects for performance
           ctx.imageSmoothingEnabled = false;
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
           ctx.lineWidth = 2;
         }
 
         // Streamlined drawing for better performance
-        resized.forEach(detection => {
+        resized.forEach((detection) => {
           const { x, y, width, height } = detection.detection.box;
-          
+
           if (ctx) {
             // Simple corner brackets for speed
             const cornerSize = 15;
             ctx.lineWidth = 3;
-            ctx.strokeStyle = '#00ff88';
-            
+            ctx.strokeStyle = "#00ff88";
+
             // Draw all corners in one path for efficiency
             ctx.beginPath();
             // Top-left
@@ -153,7 +182,7 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
           const sorted = Object.entries(exp).sort((a, b) => b[1] - a[1]);
           const detectedEmotion = sorted[0][0];
           const emotionConfidence = sorted[0][1];
-          
+
           setCurrentEmotion(detectedEmotion);
           setConfidence(emotionConfidence);
           setFaceDetected(true);
@@ -168,10 +197,10 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
         const processingTime = performance.now() - now;
         const currentFps = Math.round(1000 / Math.max(processingTime, 100));
         setFps(currentFps);
-        
+
         lastProcessTime.current = now;
       } catch (error) {
-        console.error('Detection error:', error);
+        console.error("Detection error:", error);
       }
     }
 
@@ -181,29 +210,35 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
   useEffect(() => {
     const loadModels = async () => {
       if (modelsLoaded.current) return;
-      
-      console.log('Loading models...');
+
+      console.log("Loading models...");
       await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri("/models/tiny_face_detector_model"),
-        faceapi.nets.faceExpressionNet.loadFromUri("/models/face_expression_model"),
-        faceapi.nets.faceLandmark68Net.loadFromUri("/models/face_landmark_68_model")
+        faceapi.nets.tinyFaceDetector.loadFromUri(
+          "/models/tiny_face_detector_model"
+        ),
+        faceapi.nets.faceExpressionNet.loadFromUri(
+          "/models/face_expression_model"
+        ),
+        faceapi.nets.faceLandmark68Net.loadFromUri(
+          "/models/face_landmark_68_model"
+        ),
       ]);
-      
+
       modelsLoaded.current = true;
-      console.log('Models loaded successfully');
+      console.log("Models loaded successfully");
     };
 
     const startVideo = async () => {
       try {
         // Request higher quality video for better detection
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
             width: { ideal: 640 },
             height: { ideal: 480 },
-            frameRate: { ideal: 30, max: 60 } // Higher frame rate
-          } 
+            frameRate: { ideal: 30, max: 60 }, // Higher frame rate
+          },
         });
-        
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.onloadedmetadata = () => {
@@ -212,7 +247,7 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
           };
         }
       } catch (error) {
-        console.error('Error accessing camera:', error);
+        console.error("Error accessing camera:", error);
       }
     };
 
@@ -222,11 +257,11 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      
+
       // Clean up video stream
       if (videoRef.current?.srcObject) {
         const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-        tracks.forEach(track => track.stop());
+        tracks.forEach((track) => track.stop());
       }
     };
   }, [processFrame]);
@@ -244,56 +279,86 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
   };
 
   return (
-    <div className="d-flex flex-column align-items-center w-100" style={{
-      background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)',
-      fontFamily: '"Orbitron", monospace',
-      color: '#ffffff',
-      minHeight: '100vh',
-      padding: '10px'
-    }}>
+    <div
+      className="d-flex flex-column align-items-center w-100 shared-bg webcam-detector-main"
+      style={{
+        background: "linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)",
+        fontFamily: '"Orbitron", monospace',
+        color: "#ffffff",
+        width: "100%",
+        height: "100%",
+      }}
+    >
       <style jsx>{`
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap");
+        @media (max-width: 991.98px) {
+          .webcam-detector-main {
+            min-height: 0 !important;
+            height: 100% !important;
+            width: 100% !important;
+            padding: 0 !important;
+          }
+        }
+        @media (min-width: 992px) {
+          .webcam-detector-main {
+            min-height: 100vh;
+            padding: 10px;
+          }
+        }
+        .neural-heading {
+          font-size: clamp(1.2rem, 4vw, 2rem);
+        }
+        @media (min-width: 992px) {
+          .neural-heading {
+            font-size: clamp(1.5rem, 5vw, 3rem);
+          }
+        }
       `}</style>
 
       <div className="text-center mb-3">
-        <div style={{
-          fontFamily: '"Courier New", monospace',
-          fontSize: 'clamp(1.2rem, 4vw, 2rem)',
-          fontWeight: 900,
-          letterSpacing: '3px',
-          color: '#ffffff',
-          textShadow: '2px 2px 0px #00ff88, 0 0 10px rgba(0, 255, 136, 0.5)',
-          textTransform: 'uppercase'
-        }}>
+        <div
+          className="neural-heading"
+          style={{
+            fontFamily: '"Courier New", monospace',
+            fontWeight: 900,
+            letterSpacing: "3px",
+            color: "#ffffff",
+            textShadow: "2px 2px 0px #00ff88, 0 0 10px rgba(0, 255, 136, 0.5)",
+            textTransform: "uppercase",
+          }}
+        >
           Neural Interface Scanner
         </div>
       </div>
 
       {/* Emotion Display */}
-      <div className="d-flex align-items-center justify-content-center mb-3 p-3 bg-dark bg-opacity-50 rounded" style={{
-        backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        maxWidth: `${videoSize.width}px`,
-        width: '100%'
-      }}>
-        <div 
+      <div
+        className="d-flex align-items-center justify-content-center mb-3 p-3 bg-dark bg-opacity-50 rounded"
+        style={{
+          backdropFilter: "blur(10px)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          maxWidth: `${videoSize.width}px`,
+          width: "100%",
+        }}
+      >
+        <div
           className="me-3"
-          style={{ 
-            fontSize: 'clamp(2rem, 6vw, 3rem)',
+          style={{
+            fontSize: "clamp(2rem, 6vw, 3rem)",
             color: getEmotionColor(currentEmotion),
-            filter: 'drop-shadow(0 0 8px currentColor)'
+            filter: "drop-shadow(0 0 8px currentColor)",
           }}
         >
           {getEmotionIcon(currentEmotion)}
         </div>
         <div className="text-start flex-grow-1">
-          <div 
+          <div
             className="h4 mb-1"
-            style={{ 
+            style={{
               color: getEmotionColor(currentEmotion),
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              textShadow: '0 0 8px currentColor'
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+              textShadow: "0 0 8px currentColor",
             }}
           >
             {currentEmotion}
@@ -301,13 +366,13 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
           <div className="small text-muted mb-2">
             Confidence: {Math.round(confidence * 100)}%
           </div>
-          <div className="progress" style={{ height: '6px' }}>
-            <div 
-              className="progress-bar" 
-              style={{ 
+          <div className="progress" style={{ height: "6px" }}>
+            <div
+              className="progress-bar"
+              style={{
                 width: `${confidence * 100}%`,
-                background: 'linear-gradient(90deg, #00ff88, #00cc6a)',
-                boxShadow: '0 0 8px rgba(0, 255, 136, 0.4)'
+                background: "linear-gradient(90deg, #00ff88, #00cc6a)",
+                boxShadow: "0 0 8px rgba(0, 255, 136, 0.4)",
               }}
             />
           </div>
@@ -315,77 +380,77 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
       </div>
 
       {/* Video Container */}
-      <div 
+      <div
         className="position-relative mb-3 border rounded overflow-hidden"
         style={{
           width: `${videoSize.width}px`,
           height: `${videoSize.height}px`,
-          maxWidth: '100%',
-          border: '2px solid rgba(255, 255, 255, 0.2) !important',
-          boxShadow: '0 0 30px rgba(0, 0, 0, 0.8)',
-          background: '#000000'
+          maxWidth: "100%",
+          border: "2px solid rgba(255, 255, 255, 0.2) !important",
+          boxShadow: "0 0 30px rgba(0, 0, 0, 0.8)",
+          background: "#000000",
         }}
       >
-        <video 
-          ref={videoRef} 
-          autoPlay 
-          muted 
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
           className="position-absolute top-0 start-0 w-100 h-100"
-          style={{ 
-            objectFit: 'cover',
-            filter: 'contrast(1.1) brightness(0.95)'
+          style={{
+            objectFit: "cover",
+            filter: "contrast(1.1) brightness(0.95)",
           }}
         />
-        <canvas 
-          ref={canvasRef} 
+        <canvas
+          ref={canvasRef}
           className="position-absolute top-0 start-0 w-100 h-100"
-          style={{ pointerEvents: 'none', zIndex: 10 }}
+          style={{ pointerEvents: "none", zIndex: 10 }}
         />
-        
+
         {/* Status Overlay */}
-        <div 
+        <div
           className="position-absolute top-0 start-0 m-2 px-2 py-1 bg-dark bg-opacity-75 rounded small text-light"
           style={{
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            fontSize: '0.7rem',
+            backdropFilter: "blur(10px)",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            fontSize: "0.7rem",
             fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '1px'
+            textTransform: "uppercase",
+            letterSpacing: "1px",
           }}
         >
           {faceDetected ? "FACE LOCKED" : "SCANNING..."}
         </div>
-        
+
         {/* Performance Overlay */}
-        <div 
+        <div
           className="position-absolute top-0 end-0 m-2 px-2 py-1 rounded small"
           style={{
-            background: 'rgba(0, 255, 136, 0.1)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(0, 255, 136, 0.3)',
-            color: '#00ff88',
-            fontSize: '0.7rem',
+            background: "rgba(0, 255, 136, 0.1)",
+            backdropFilter: "blur(10px)",
+            border: "1px solid rgba(0, 255, 136, 0.3)",
+            color: "#00ff88",
+            fontSize: "0.7rem",
             fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '1px'
+            textTransform: "uppercase",
+            letterSpacing: "1px",
           }}
         >
           {fps} FPS
         </div>
-        
+
         {/* Pause Overlay */}
         {isPaused && (
-          <div 
+          <div
             className="position-absolute top-50 start-50 translate-middle p-3 bg-dark bg-opacity-75 rounded text-center"
             style={{
-              backdropFilter: 'blur(15px)',
-              border: '1px solid rgba(255, 107, 0, 0.5)',
-              color: '#ff6b00',
+              backdropFilter: "blur(15px)",
+              border: "1px solid rgba(255, 107, 0, 0.5)",
+              color: "#ff6b00",
               fontWeight: 700,
-              textShadow: '0 0 10px rgba(255, 107, 0, 0.5)',
-              textTransform: 'uppercase',
-              letterSpacing: '2px'
+              textShadow: "0 0 10px rgba(255, 107, 0, 0.5)",
+              textTransform: "uppercase",
+              letterSpacing: "2px",
             }}
           >
             DETECTION PAUSED
@@ -395,14 +460,16 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
 
       {/* Controls */}
       <div className="d-flex gap-3 flex-wrap justify-content-center mb-3">
-        <button 
+        <button
           onClick={handleTogglePause}
-          className={`btn px-3 py-2 ${isPaused ? 'btn-outline-warning' : 'btn-outline-light'}`}
+          className={`btn px-3 py-2 ${
+            isPaused ? "btn-outline-warning" : "btn-outline-light"
+          }`}
           style={{ fontFamily: '"Orbitron", monospace' }}
         >
-          {isPaused ? 'Resume' : 'Pause'}
+          {isPaused ? "Resume" : "Pause"}
         </button>
-        <button 
+        <button
           onClick={handleRestart}
           className="btn btn-outline-danger px-3 py-2"
           style={{ fontFamily: '"Orbitron", monospace' }}
@@ -427,9 +494,6 @@ const WebcamDetector: React.FC<WebcamDetectorProps> = ({ onEmotionDetected }) =>
           No face detected - Position yourself in front of the camera
         </div>
       )} */}
-
-
-      
     </div>
   );
 };
